@@ -422,7 +422,7 @@ function M.show()
 
   opts.width = opts.width - bw
   opts.height = opts.height - bw
-  M.check_overlap(opts)
+  M.check_overlap(opts, bw)
 
   M.view = M.view or Win.new(opts)
   M.view:show(opts)
@@ -482,22 +482,22 @@ function M.show()
 end
 
 ---@param opts wk.Win.opts
-function M.check_overlap(opts)
-  if Config.win.no_overlap == false then
-    return
+---@param bw number
+function M.check_overlap(opts, bw)
+  if Config.win.no_overlap ~= false then
+    local row, col = vim.fn.screenrow(), vim.fn.screencol()
+    local overlaps = (row >= opts.row and row <= opts.row + opts.height)
+      and (col >= opts.col and col <= opts.col + opts.width)
+    if overlaps then
+      opts.row = row
+    end
   end
-  local row, col = vim.fn.screenrow(), vim.fn.screencol()
-  local overlaps = (row >= opts.row and row <= opts.row + opts.height)
-    and (col >= opts.col and col <= opts.col + opts.width)
-  -- dd(overlaps and "overlaps" or "no overlap", {
-  --   editor = { lines = vim.o.lines, columns = vim.o.columns },
-  --   cursor = { col = col, row = row },
-  --   win = { row = opts.row, col = opts.col, height = opts.height, width = opts.width },
-  --   overlaps = overlaps,
-  -- })
-  if overlaps then
-    opts.row = row + 1
-    opts.height = math.max(vim.o.lines - opts.row, 4)
+
+  -- Always prevent overlap with the bottom statusline and cmdline
+  local bottom = vim.o.cmdheight + (vim.o.laststatus > 0 and 1 or 0)
+  local max_height = vim.o.lines - opts.row - bottom - bw
+  if opts.height > max_height then
+    opts.height = math.max(max_height, 4)
   end
 end
 
